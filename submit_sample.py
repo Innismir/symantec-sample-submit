@@ -30,7 +30,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os, requests, argparse
+import os, requests, argparse, random, hashlib, cStringIO, sys
 from ConfigParser import SafeConfigParser
 
 config = SafeConfigParser()
@@ -48,6 +48,44 @@ parser.add_argument("-c", "--comments", help="Comments to Send With File", actio
 parser.add_argument('args', nargs=argparse.REMAINDER)
 args = parser.parse_args()
  
+if args.file is None:
+
+    print "Downloading " + args.url + "..."
+
+    useragent_list = (
+        'Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0',
+        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Firefox/17.0',
+        'Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:16.0.1) Gecko/20121011 Firefox/16.0.1',
+        'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)',
+        'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'
+    )
+
+    req_headers = {
+        'User-Agent': random.choice(useragent_list),
+        'Referer': 'http://www.google.com/trends/hottrends'
+    }
+
+
+    sample_request = requests.get(args.url, headers=req_headers)
+
+    if sample_request.status_code == 200:
+
+        holdingfile = cStringIO.StringIO()
+        holdingfile.write(sample_request.content)
+
+        file = holdingfile.getvalue()
+        filename = hashlib.sha256(holdingfile.getvalue()).hexdigest()
+
+    else:
+        print args.url + " did not return HTTP 200..."
+        sys.exit(1)
+else:
+
+    file = open(args.file, 'rb')
+    filename = os.path.basename(args.file)
+
+print "Submitting File..."
+
 submission_url = "https://submit.symantec.com/websubmit/bcs.cgi"
 
 payload = {'mode' : '2',
@@ -61,14 +99,6 @@ payload = {'mode' : '2',
            'comments' : args.comments
 
 }
-
-if args.url is True:
-    #Do something
-    pass
-else:
-    file = open(args.file, 'rb')
-    filename = os.path.basename(args.file)
-
 
 files = {'upfile' : (filename, file)}
 
