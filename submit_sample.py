@@ -73,8 +73,8 @@ if args.file is None:
         holdingfile = cStringIO.StringIO()
         holdingfile.write(sample_request.content)
 
-        file = holdingfile.getvalue()
-        filename = hashlib.sha256(holdingfile.getvalue()).hexdigest()
+        file = sample_request.content
+        filename = hashlib.sha256(sample_request.content).hexdigest()
 
     else:
         print args.url + " did not return HTTP 200..."
