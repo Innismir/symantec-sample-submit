@@ -33,11 +33,14 @@
 import os, requests, argparse, random, hashlib, cStringIO, sys
 from ConfigParser import SafeConfigParser
 
+#Read the configuration file
 config = SafeConfigParser()
 config.read('config.ini')
 
+#Read the command line arguments
 parser = argparse.ArgumentParser()
 
+#The user needs to specify iether a URL or a filename
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('-u', '--url', action='store')
 group.add_argument('-f', '--file', action='store')
@@ -50,7 +53,11 @@ args = parser.parse_args()
  
 if args.file is None:
 
+    #If user has told us it's a URL download it
+
     print "Downloading " + args.url + "..."
+
+    #Set up some random User Agents and choose one...
 
     useragent_list = (
         'Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0',
@@ -66,27 +73,44 @@ if args.file is None:
     }
 
 
+    #Make the request
+
     sample_request = requests.get(args.url, headers=req_headers)
 
     if sample_request.status_code == 200:
 
+        #If we grabbed it, dump it into a StringIO object so we can use it
+
         holdingfile = cStringIO.StringIO()
         holdingfile.write(sample_request.content)
+
+        #Put the file into the variable and generate a hash for the filename
 
         file = sample_request.content
         filename = hashlib.sha256(sample_request.content).hexdigest()
 
     else:
+
+        #If it doesn't return a 200, abort....
+
         print args.url + " did not return HTTP 200..."
         sys.exit(1)
 else:
 
+    #If it's a file read it in and 
+
     file = open(args.file, 'rb')
     filename = os.path.basename(args.file)
 
+#OK, let's submit this bad mamma jamma
+
 print "Submitting File..."
 
+#Symantec BCS URL
+
 submission_url = "https://submit.symantec.com/websubmit/bcs.cgi"
+
+#Generate the payload of the POST request from the config.ini settings
 
 payload = {'mode' : '2',
            'fname' : config.get('symantec_bcs', 'first_name'),
@@ -100,8 +124,14 @@ payload = {'mode' : '2',
 
 }
 
+#...and attach the file
+
 files = {'upfile' : (filename, file)}
 
+#Submit the request
+
 r = requests.post(submission_url, payload, files=files)
+
+#FIXME: Print out the Page
 
 print r.text
